@@ -17,19 +17,26 @@ class TimerAssetsTest < ActionController::TestCase
     css_select('script[src]').map { |s| s['src'] }
   end
 
+  # Plugin script URL: /plugin_assets/timelog_timer/javascripts/timer.js up to Redmine 5,
+  # /assets/plugin_assets/timelog_timer/timer-<digest>.js on Redmine 6 (Propshaft).
+  def plugin_script?(name)
+    pattern = %r{/plugin_assets/timelog_timer/(javascripts/)?#{Regexp.escape(name)}(-\h+)?\.js}
+    script_srcs.any? { |src| src =~ pattern }
+  end
+
   def test_log_time_form_includes_the_timer_scripts
     timer_get :new, :project_id => 1
     assert_response :success
     assert_select '#time_entry_hours'
-    assert script_srcs.any? { |src| src.include?('/plugin_assets/timelog_timer/javascripts/timer.js') }
-    assert script_srcs.any? { |src| src.include?('/plugin_assets/timelog_timer/javascripts/store.js') }
+    assert plugin_script?('timer'), script_srcs.inspect
+    assert plugin_script?('store'), script_srcs.inspect
   end
 
   def test_german_users_get_the_german_strings
     User.find(2).update_column(:language, 'de')
     timer_get :new, :project_id => 1
     assert_response :success
-    assert script_srcs.any? { |src| src.include?('/plugin_assets/timelog_timer/javascripts/i18n/de.js') }
+    assert plugin_script?('i18n/de'), script_srcs.inspect
   end
 
   def test_english_users_get_no_translation_file
